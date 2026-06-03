@@ -1,6 +1,6 @@
 const router = require('express').Router()
 const sql = require('../db');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 
 const { registerValidation, loginValidation } = require('../validation');
 
@@ -42,3 +42,35 @@ router.post('/register', async (req, res) => {
   }
 })
 
+//router pra login
+router.post('/login', async (req, res) => {
+
+  //valida as info
+  const { error } = loginValidation(req.body);
+  if (error) {
+    return res.status(400).json({ message: error.details[0].message })
+  }
+
+  //mesma coisa em /register, menos nome
+  const { email, password } = req.body;
+
+  //verifica se user existe
+  const [user] = await sql`
+    SELECT * FROM users WHERE email = ${email}
+  `
+  //se deu errado, manda a mensagem de erro
+  if (![user]) {
+    return res.status(400).send('User doesn\'t exist or there is more than one user with this email(shouldn\'t happen, just here for precaution')
+  }
+  //compara a senha enviada com a senha na db
+  const validPassword = await bcrypt.compare(password, user.password);
+
+  //senha errada
+  if (validPassword === false) {
+    return res.status(400).json({ message: 'Invalid password' });
+  }
+
+  //se tudo deu certo, login ok
+  res.send('Logged in!');
+})
+module.exports = router;
