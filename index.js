@@ -1,5 +1,9 @@
 const express = require('express');
 const app = express();
+const sql = require('./db');
+
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 //Import routes
 const authRoute = require('./routes/auth')
