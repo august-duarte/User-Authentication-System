@@ -1,5 +1,6 @@
 const router = require('express').Router()
 const sql = require('../db');
+const bcrypt = require('bcryptjs');
 
 const { registerValidation, loginValidation } = require('../validation');
 
@@ -14,6 +15,10 @@ router.post('/register', async (req, res) => {
 
   //destructuring the data - sei lá, faz vars do req.body
   const { name, email, password } = req.body;
+  
+  //bcrypt pra fazer hash na senha
+  const saltRounds = 10;
+  const hashedPassword = await bcrypt.hash(password, saltRounds);
 
   //checking if the user is already in the database - ok
   const emailExists = await sql`
@@ -28,7 +33,7 @@ router.post('/register', async (req, res) => {
     try {
     const [user] = await sql`
       INSERT INTO users (name, email, password)
-      VALUES (${name}, ${email}, ${password})
+      VALUES (${name}, ${email}, ${hashedPassword})
       RETURNING id, name, email, created_at
     `;
     res.status(201).json(user);
