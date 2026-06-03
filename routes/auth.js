@@ -38,7 +38,8 @@ router.post('/register', async (req, res) => {
     `;
     res.status(201).json(user);
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    console.error('Register failed', error);
+    res.status(500).json({ message:'Something went wrong, please try again later' })
   }
 })
 
@@ -60,7 +61,7 @@ router.post('/login', async (req, res) => {
   `
   //se deu errado, manda a mensagem de erro
   if (![user]) {
-    return res.status(400).send('User doesn\'t exist or there is more than one user with this email(shouldn\'t happen, just here for precaution')
+    return res.status(400).send('User doesn\'t exist. Please check your email and password.')
   }
   //compara a senha enviada com a senha na db
   const validPassword = await bcrypt.compare(password, user.password);
