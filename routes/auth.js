@@ -1,8 +1,21 @@
+require('dotenv').config();
 const router = require('express').Router()
 const sql = require('../db');
 const bcrypt = require('bcrypt');
-
+const jwt = require('jsonwebtoken');
 const { registerValidation, loginValidation } = require('../validation');
+
+const verifyToken = (req, res, next) => {
+  const token = req.header('Authorization')?.split(' ')[1];
+  if (!token) return res.status(401).json({ message: 'Access denied' });
+
+  try {
+    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    next();
+  } catch {
+    res.status(401).json({ message: 'Invalid token' });
+  }
+};
 
 //router pra registrar user novo
 router.post('/register', async (req, res) => {
@@ -60,7 +73,7 @@ router.post('/login', async (req, res) => {
     SELECT * FROM users WHERE email = ${email}
   `
   //se deu errado, manda a mensagem de erro
-  if (![user]) {
+  if (!user) {
     return res.status(400).send('User doesn\'t exist. Please check your email and password.')
   }
   //compara a senha enviada com a senha na db
@@ -71,7 +84,25 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ message: 'Invalid password' });
   }
 
+  //cria o token
+  const token = jwt.sign(
+    { id: user.id },  //payload - info que vai no token
+    process.env.JWT_SECRET, //secret - chave secreta para verificar o token
+    { expiresIn: '1h' }); //options - tempo de expiração
+
+
   //se tudo deu certo, login ok
-  res.send('Logged in!');
+  res.json({ token: token });
+
+})
+
+//router para buscar user pelo id
+router.get('/:userId', verifyToken, async (req, res) => {
+  const { userId } = req.params;
+  const [user] = await sql`
+    SELECT id, name, email, created_at FROM users WHERE id = ${userId}
+  `
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  res.json(user);
 })
 module.exports = router;
