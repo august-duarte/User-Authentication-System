@@ -4,23 +4,8 @@ const sql = require('../db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { registerValidation, loginValidation, updateProfileValidation } = require('../validation');
+const verifyToken = require('../middleware/verifyToken');
 
-const verifyToken = (req, res, next) => {
-  //puxa o token do header Authorization
-  const token = req.header('Authorization')?.split(' ')[1];
-
-  //se não tiver token, acesso negado
-  if (!token) return res.status(401).json({ message: 'Access denied' });
-
-  try {
-    //verifica se o token é válido e puxa o id do user
-    req.user = jwt.verify(token, process.env.JWT_SECRET);
-    next();
-  } catch {
-    //se token inválido, acesso negado
-    res.status(401).json({ message: 'Invalid token' });
-  }
-};
 
 //router pra registrar user novo
 router.post('/register', async (req, res) => {
