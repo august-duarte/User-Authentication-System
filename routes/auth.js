@@ -6,13 +6,18 @@ const jwt = require('jsonwebtoken');
 const { registerValidation, loginValidation } = require('../validation');
 
 const verifyToken = (req, res, next) => {
+  //puxa o token do header Authorization
   const token = req.header('Authorization')?.split(' ')[1];
+
+  //se não tiver token, acesso negado
   if (!token) return res.status(401).json({ message: 'Access denied' });
 
   try {
+    //verifica se o token é válido e puxa o id do user
     req.user = jwt.verify(token, process.env.JWT_SECRET);
     next();
   } catch {
+    //se token inválido, acesso negado
     res.status(401).json({ message: 'Invalid token' });
   }
 };
@@ -96,13 +101,27 @@ router.post('/login', async (req, res) => {
 
 })
 
+//router para buscar próprio user
+router.get('/me', verifyToken, async (req, res) => {
+  //req.user puxa o user que está no token
+  const { id } = req.user;
+  const [user] = await sql`
+    SELECT id, name, email, created_at FROM users WHERE id = ${id}
+  `
+  res.json(user);
+  });
+
 //router para buscar user pelo id
 router.get('/:userId', verifyToken, async (req, res) => {
+  //req.params puxa o que estiver no lugar de :userid na URL
   const { userId } = req.params;
   const [user] = await sql`
     SELECT id, name, email, created_at FROM users WHERE id = ${userId}
   `
+  //se user não existir
   if (!user) return res.status(404).json({ message: 'User not found' });
+  //se user existir e verificação ok, manda o user
   res.json(user);
-})
+});
+
 module.exports = router;
