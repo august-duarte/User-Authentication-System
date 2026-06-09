@@ -3,7 +3,7 @@ const router = require('express').Router()
 const sql = require('../db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { registerValidation, loginValidation } = require('../validation');
+const { registerValidation, loginValidation, nameValidation } = require('../validation');
 
 const verifyToken = (req, res, next) => {
   //puxa o token do header Authorization
@@ -79,7 +79,7 @@ router.post('/login', async (req, res) => {
   `
   //se deu errado, manda a mensagem de erro
   if (!user) {
-    return res.status(400).send('User doesn\'t exist. Please check your email and password.')
+    return res.status(400).json({ message: 'User doesn\'t exist. Please check your email and password.' })
   }
   //compara a senha enviada com a senha na db
   const validPassword = await bcrypt.compare(password, user.password);
@@ -124,4 +124,32 @@ router.get('/:userId', verifyToken, async (req, res) => {
   res.json(user);
 });
 
+//router para mudar nome do user
+router.patch('/me', verifyToken, async (req, res) => {
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  
+  const { id } = req.user
+  const { name } = req.body
+
+  //verifica se o nome é válido
+  const { error } = nameValidation(req.body);
+  if (error) {
+    return res.status(400).json({ message: error.details[0].message })
+  }
+
+  //atualiza o nome do user
+  try {
+    const [user] = await sql`
+    UPDATE users 
+    SET name = ${name}
+    WHERE id = ${id}
+    RETURNING id, name, email, created_at
+    `;
+    res.status(200).json(user);
+  } catch (error) {
+    console.error('Name update failed', error);
+    res.status(500).json({ message:'Something went wrong, please try again later' })
+  }
+  
+});
 module.exports = router;
