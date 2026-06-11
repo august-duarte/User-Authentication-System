@@ -6,6 +6,8 @@ const sql = require('./db');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
 //Import routes
 const authRoute = require('./routes/auth')
 
