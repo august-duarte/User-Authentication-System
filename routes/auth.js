@@ -183,4 +183,20 @@ router.patch('/me', verifyToken, async (req, res) => {
   }
 });
 
+//router para logout
+router.post('/logout', verifyToken, async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ message: 'Unauthorized' });
+    await sql`
+      INSERT INTO blacklisted_jwts (jwt) VALUES (${token})
+    `;
+    req.headers.authorization = null;
+    res.status(200).json({ message: 'Logged out successfully' });
+
+  } catch (error) {
+    console.error('Logout failed', error);
+    res.status(500).json({ message: 'Something went wrong, please try again later' });
+  }
+});
 module.exports = router;
