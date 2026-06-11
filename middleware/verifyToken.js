@@ -1,3 +1,5 @@
+const jwt = require('jsonwebtoken');
+
 const verifyToken = (req, res, next) => {
   //puxa o token do header Authorization
   const token = req.header('Authorization')?.split(' ')[1];

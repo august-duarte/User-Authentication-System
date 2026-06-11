@@ -6,7 +6,6 @@ const jwt = require('jsonwebtoken');
 const { registerValidation, loginValidation, updateProfileValidation } = require('../validation');
 const verifyToken = require('../middleware/verifyToken');
 
-
 //router pra registrar user novo
 router.post('/register', async (req, res) => {
   try {
@@ -107,6 +106,14 @@ router.get('/:userId', verifyToken, async (req, res) => {
   try {
     //req.params puxa o que estiver no lugar de :userid na URL
     const { userId } = req.params;
+    if (req.user.id !== Number(userId)) {
+      const [currentUser] = await sql`
+        SELECT is_admin FROM users WHERE id = ${req.user.id}
+      `;
+      if (!currentUser?.is_admin) {
+        return res.status(403).json({ message: 'Not allowed' });
+      }
+    }
     const [user] = await sql`
       SELECT id, name, email, created_at FROM users WHERE id = ${userId}
     `
