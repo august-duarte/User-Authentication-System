@@ -199,4 +199,29 @@ router.post('/logout', verifyToken, async (req, res) => {
     res.status(500).json({ message: 'Something went wrong, please try again later' });
   }
 });
+
+//router para mudar senha
+router.patch('/me/password', verifyToken, async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const { id } = req.user;
+    const [user] = await sql`
+      SELECT * FROM users WHERE id = ${id}
+    `;
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    const validOldPassword = await bcrypt.compare(oldPassword, user.password)
+    if (!validOldPassword) {
+      return res.status(400).json({ message: 'Invalid old password' });
+    }
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    await sql`
+      UPDATE users SET password = ${hashedNewPassword}
+      WHERE id = ${req.user.id}
+    `;
+    res.status(200).json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Password update failed', error);
+    res.status(500).json({ message: 'Something went wrong, please try again later' });
+  }
+});
 module.exports = router;
